@@ -35,7 +35,7 @@ var keyboard = {
 var crosshairs = {
   x: (CANVAS_WIDTH/2 - 15),
   y: (CANVAS_HEIGHT/2 - 15),
-  radius: 15,
+  radius: 10,
   fired: false
 };
 
@@ -407,15 +407,27 @@ function fireMissile(missile,x,y) {
 // Drawing
 function drawBackground(c) {
   c.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.fillStyle = 'gray';
+  c.fillStyle = 'black';
+  c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT-ground.height);
+  c.fillStyle = 'brown';
   c.fillRect(0, CANVAS_HEIGHT-ground.height, CANVAS_WIDTH, ground.height);
 }
 
 function drawCrosshairs(c) {
   c.beginPath();
-  c.arc(crosshairs.x, crosshairs.y, crosshairs.radius, 0, Math.PI*2, false);
+  // In case you like a circle
+  // c.arc(crosshairs.x, crosshairs.y, crosshairs.radius, 0, Math.PI*2, false);
+  c.moveTo(crosshairs.x, crosshairs.y);
+  c.lineTo(crosshairs.x + crosshairs.radius, crosshairs.y);
+  c.moveTo(crosshairs.x, crosshairs.y);
+  c.lineTo(crosshairs.x, crosshairs.y + crosshairs.radius);
+  c.moveTo(crosshairs.x, crosshairs.y);
+  c.lineTo(crosshairs.x - crosshairs.radius, crosshairs.y);
+  c.moveTo(crosshairs.x, crosshairs.y);
+  c.lineTo(crosshairs.x, crosshairs.y - crosshairs.radius);
+  c.moveTo(crosshairs.x, crosshairs.y);
   c.closePath();
-  c.strokeStyle = 'black';
+  c.strokeStyle = 'white';
   c.stroke();
 }
 
@@ -443,16 +455,20 @@ function drawCities(c) {
   for(var city in cities) {
     var city = cities[city];
     if(!city.destroyed) {
-      c.fillStyle = 'red';
+      c.fillStyle = 'gray';
       c.fillRect(city.x, city.y, city.width, city.height);
     }
   }
 }
 
 function drawFiredMissiles(c) {
-  c.fillStyle = 'purple';
   for(var missile in firedMissiles) {
     var missile = firedMissiles[missile];
+    if(missile.owner === 'enemy') {
+      c.fillStyle = 'red';
+    } else {
+      c.fillStyle = 'white';
+    }
     if(missile.flying) {
       c.fillRect(missile.x, missile.y, missile.width, missile.height);
 
