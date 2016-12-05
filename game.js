@@ -5,6 +5,7 @@ var FPS = 30;
 var MISSILE_SPEED = 10;
 var EXPLOSION_SIZE = 30;
 var LAUNCH_RATE = 50;
+var UFO_SPEED = 3;
 
 // Assets
 var missile_image = '';
@@ -98,6 +99,16 @@ var overlay = {
   flash: ''
 };
 
+var ufos = [];
+
+function UFO() {
+  this.flying = false;
+  this.height = 20;
+  this.width = 20;
+  this.x = 0;
+  this.y = 0;
+}
+
 // Setup 
 function initCities() {
   for(var i=0; i<4; i++) {
@@ -139,6 +150,13 @@ function initEnemyMissiles() {
     newMissile.y = 0;
     newMissile.x = Math.floor(Math.random() * CANVAS_WIDTH) + 1;
     enemyMissiles.push(newMissile);
+  }
+}
+
+function initUFOs() {
+  var ufoCount = Math.round(Math.random() * (game.level));
+  for(var i=0; i<ufoCount; i++) {
+    ufos.push(new UFO());
   }
 }
 
@@ -228,7 +246,21 @@ function updatePlanes() {
 };
 
 function updateUFOs() {
+  if(ufos.length && game.counter != 0 && game.counter % 150 === 0) {
+    launchUFO();
+  }
 
+  for(var ufo in ufos) {
+    var ufo = ufos[ufo];
+    if(ufo.flying && ufo.direction === 'east') {
+      ufo.x += UFO_SPEED;
+    } else if (ufo.flying && ufo.direction === 'west') {
+      ufo.x -= UFO_SPEED;
+    } else if (ufo.destroyed) {
+      var index = ufos.indexOf(ufo);
+      ufos.splice(index, 1);
+    }
+  }
 };
 
 function updateCities() {
@@ -291,7 +323,6 @@ function updateExplosions() {
     for(var missile in firedMissiles) {
       var missile = firedMissiles[missile];
       if(explosionCollided(explosion, missile)) {
-        console.log("Explosion collided with missile");
         missile.destroyed = true;
       }      
     }
@@ -307,6 +338,15 @@ function updateExplosions() {
       var base = bases[base];
       if(explosionCollided(explosion, base)) {
         base.destroyed = true;
+      }
+    }
+
+    // check collisions with UFOs
+    for(var ufo in ufos) {
+      var ufo = ufos[ufo];
+      if(explosionCollided(explosion, ufo)) {
+        ufo.destroyed = true;
+        ufo.flying = false;
       }
     }
 
@@ -403,6 +443,16 @@ function fireMissile(missile,x,y) {
   missile.width = 2;
 }
 
+function launchUFO() {
+  var ufo = ufos[ufos.length-1];
+  ufo.flying = true;
+  var directions = ['east', 'west'];
+  var random = Math.floor(Math.random() * 2);
+  ufo.direction = directions[random];
+  ufo.x = ufo.direction === 'east' ? ufo.x = 0 - (ufo.width + 5) : ufo.x = CANVAS_WIDTH + 5;
+  ufo.y = CANVAS_HEIGHT - 400;
+}
+
 
 // Drawing
 function drawBackground(c) {
@@ -415,8 +465,11 @@ function drawBackground(c) {
 
 function drawCrosshairs(c) {
   c.beginPath();
-  // In case you like a circle
+
+  // Circle alternative for crosshairs
   // c.arc(crosshairs.x, crosshairs.y, crosshairs.radius, 0, Math.PI*2, false);
+
+  // Crosshairs as a cross
   c.moveTo(crosshairs.x, crosshairs.y);
   c.lineTo(crosshairs.x + crosshairs.radius, crosshairs.y);
   c.moveTo(crosshairs.x, crosshairs.y);
@@ -426,6 +479,7 @@ function drawCrosshairs(c) {
   c.moveTo(crosshairs.x, crosshairs.y);
   c.lineTo(crosshairs.x, crosshairs.y - crosshairs.radius);
   c.moveTo(crosshairs.x, crosshairs.y);
+
   c.closePath();
   c.strokeStyle = 'white';
   c.stroke();
@@ -503,6 +557,16 @@ function drawExplosions(c) {
       c.beginPath();
       c.arc(explosion.x, explosion.y, explosion.counter, 0, Math.PI*2);
       c.fill();
+    }
+  }
+}
+
+function drawUFOs(c) {
+  for(var ufo in ufos) {
+    var ufo = ufos[ufo];
+    if(ufo.flying) {
+      c.fillStyle = 'yellow';
+      c.fillRect(ufo.x, ufo.y, ufo.width, ufo.height);
     }
   }
 }

@@ -8,6 +8,8 @@
 </head>
 <body>
 
+  <h1>Missile Command</h1>
+
   <p>Press space to start.</p>
     
   <canvas id="canvas"></canvas>  
@@ -28,6 +30,7 @@
       initBases();
       initPlayerMissiles();
       initEnemyMissiles();
+      initUFOs();
       if(starting) {
         listen();
       }
@@ -37,7 +40,7 @@
       updateGame();
       // updatePlayer();
       // updatePlanes();
-      // updateUFOs();
+      updateUFOs();
       updateCities();
       updateBases();
       updateFiredMissiles();
@@ -48,7 +51,7 @@
       drawCities(c);
       drawFiredMissiles(c);
       drawExplosions(c);
-      // drawUFOs(c);
+      drawUFOs(c);
       // drawPlanes(c);
       // drawOverlay(c);
       drawCrosshairs(c);
