@@ -8,6 +8,14 @@ var LAUNCH_RATE = 50;
 var UFO_SPEED = 3;
 var PLANE_SPEED = 2;
 
+// Scoring
+var UFO_SCORE = 5;
+var PLANE_SCORE = -5;
+var MISSILE_SCORE = 2;
+var REMAINING_MISSILE_SCORE = 1;
+var REMAINING_BASE_SCORE = 2;
+var REMAINING_CITY_SCORE = 5;
+
 // Assets
 var missile_image = '';
 var city_image = '';
@@ -235,7 +243,6 @@ function updateGame() {
       overlay.subTitle = 'Your score: ' + game.levelScore;
       planes = [];
       ufos = [];
-      game.levelScore = 0;
 
     // Pause game
     } else if(keyboard.space) {
@@ -262,6 +269,7 @@ function updateGame() {
   if(game.state === 'next' && keyboard.space) {
     keyboard = {};
     game.level += 1;
+    game.levelScore = 0;
     setup();
     game.state = 'playing';
   }
@@ -380,6 +388,7 @@ function updateExplosions() {
       var missile = firedMissiles[missile];
       if(explosionCollided(explosion, missile)) {
         missile.destroyed = true;
+        addScore(MISSILE_SCORE);
       }      
     }
     // check collisions with cities
@@ -404,6 +413,7 @@ function updateExplosions() {
       if(explosionCollided(explosion, ufo)) {
         ufo.destroyed = true;
         ufo.flying = false;
+        addScore(UFO_SCORE);
       }
     }
 
@@ -413,6 +423,7 @@ function updateExplosions() {
       if(explosionCollided(explosion, plane)) {
         plane.destroyed = true;
         plane.flying = false;
+        addScore(PLANE_SCORE);
       }
     }
 
@@ -525,6 +536,15 @@ function drawCrosshairs(c) {
 }
 
 function drawOverlay(c) {
+  // Draw scores
+  c.fillStyle = 'gray';
+  c.font = "1em Arial";
+  var levelScore = "Level Score: " + game.levelScore;
+  c.fillText(levelScore, 30, 15);
+
+  var totalScore = "Total Score: " + game.totalScore;
+  c.fillText(totalScore, CANVAS_WIDTH - c.measureText(totalScore).width - 30, 15);
+
   if(overlay.title) {
     c.fillStyle = 'white';
     c.font = "3em Arial";
@@ -714,20 +734,24 @@ Vector.normalize = function(vector) {
 };
 
 function restartGame(cleanupOnly) {
-    cities = [];
-    bases = [];
-    planes = [];
-    ufos = [];
-    enemyMissiles = [];
-    firedMissiles = [];
-    explosions = [];
-    game.counter = 0;
-    game.level = 1;    
-    if(!cleanupOnly) {
-      game.levelScore = 0;
-      game.totalScore = 0;
-      setup();
-      game.state = 'playing';
-    }
+  cities = [];
+  bases = [];
+  planes = [];
+  ufos = [];
+  enemyMissiles = [];
+  firedMissiles = [];
+  explosions = [];
+  game.counter = 0;
+  game.level = 1;    
+  if(!cleanupOnly) {
+    game.levelScore = 0;
+    game.totalScore = 0;
+    setup();
+    game.state = 'playing';
+  }
 }
 
+function addScore(score) {
+  game.levelScore += score;
+  game.totalScore += score;
+}
