@@ -6,6 +6,7 @@ var MISSILE_SPEED = 10;
 var EXPLOSION_SIZE = 30;
 var LAUNCH_RATE = 50;
 var UFO_SPEED = 3;
+var PLANE_SPEED = 2;
 
 // Assets
 var missile_image = '';
@@ -109,6 +110,16 @@ function UFO() {
   this.y = 0;
 }
 
+var planes = [];
+
+function Plane() {
+  this.flying = false;
+  this.height = 15;
+  this.width = 35;
+  this.x = 0;
+  this.y = 0; 
+}
+
 // Setup 
 function initCities() {
   for(var i=0; i<4; i++) {
@@ -158,6 +169,14 @@ function initUFOs() {
   for(var i=0; i<ufoCount; i++) {
     ufos.push(new UFO());
   }
+}
+
+function initPlanes() {
+  planes.push(new Plane());
+  // var planeCount = Math.round(Math.random() * (game.level));
+  // for(var i=0; i<planeCount; i++) {
+  //   planes.push(new Plane());
+  // }
 }
 
 var prevPos;
@@ -242,7 +261,21 @@ function updatePlayer() {
 };
 
 function updatePlanes() {
+  if(planes.length && game.counter != 0 && game.counter % 250 === 0) {
+    launchPlane();
+  }
 
+  for(var plane in planes) {
+    var plane = planes[plane];
+    if(plane.flying && plane.direction === 'east') {
+      plane.x += PLANE_SPEED;
+    } else if (plane.flying && plane.direction === 'west') {
+      plane.x -= PLANE_SPEED;
+    } else if (plane.destroyed) {
+      var index = planes.indexOf(plane);
+      planes.splice(index, 1);
+    }
+  }
 };
 
 function updateUFOs() {
@@ -350,6 +383,15 @@ function updateExplosions() {
       }
     }
 
+    // check collisions with Planes
+    for(var plane in planes) {
+      var plane = planes[plane];
+      if(explosionCollided(explosion, plane)) {
+        plane.destroyed = true;
+        plane.flying = false;
+      }
+    }
+
     if(explosion.counter === 0) {
       index = explosions.indexOf(explosion);  
       explosions.splice(index, 1);
@@ -451,6 +493,16 @@ function launchUFO() {
   ufo.direction = directions[random];
   ufo.x = ufo.direction === 'east' ? ufo.x = 0 - (ufo.width + 5) : ufo.x = CANVAS_WIDTH + 5;
   ufo.y = CANVAS_HEIGHT - 400;
+}
+
+function launchPlane() {
+  var plane = planes[planes.length-1];
+  plane.flying = true;
+  var directions = ['east', 'west'];
+  var random = Math.floor(Math.random() * 2);
+  plane.direction = directions[random];
+  plane.x = plane.direction === 'east' ? plane.x = 0 - (plane.width + 5) : plane.x = CANVAS_WIDTH + 5;
+  plane.y = CANVAS_HEIGHT - 400;
 }
 
 
@@ -567,6 +619,16 @@ function drawUFOs(c) {
     if(ufo.flying) {
       c.fillStyle = 'yellow';
       c.fillRect(ufo.x, ufo.y, ufo.width, ufo.height);
+    }
+  }
+}
+
+function drawPlanes(c) {
+  for(var plane in planes) {
+    var plane = planes[plane];
+    if(plane.flying) {
+      c.fillStyle = 'green';
+      c.fillRect(plane.x, plane.y, plane.width, plane.height);
     }
   }
 }

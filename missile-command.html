@@ -31,6 +31,7 @@
       initPlayerMissiles();
       initEnemyMissiles();
       initUFOs();
+      initPlanes();
       if(starting) {
         listen();
       }
@@ -39,7 +40,7 @@
     function gameLoop() {
       updateGame();
       // updatePlayer();
-      // updatePlanes();
+      updatePlanes();
       updateUFOs();
       updateCities();
       updateBases();
@@ -52,7 +53,7 @@
       drawFiredMissiles(c);
       drawExplosions(c);
       drawUFOs(c);
-      // drawPlanes(c);
+      drawPlanes(c);
       // drawOverlay(c);
       drawCrosshairs(c);
     }
