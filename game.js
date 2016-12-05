@@ -40,7 +40,7 @@ var crosshairs = {
 };
 
 var player = {
-
+  destroyedMissiles: []
 };
 
 var ground = {
@@ -79,12 +79,13 @@ function Missile() {
   this.height = 5;
   this.width = 2;
   this.travelUnit = {};
+  this.destroyed = false;
 };
 
 var explosions = [];
 
 function Explosion(object) {
-  this.counter = 0;
+  this.counter = 1;
   this.x = object.x;
   this.y = object.y;
   this.width = 0;
@@ -97,33 +98,7 @@ var overlay = {
   flash: ''
 };
 
-// Game functions
-var prevPos;
-function listen() { 
-  $(document).bind('keydown', 'space', function(e) {
-    keyboard[e.data.keys] = true;
-  });
-  $(document).bind('keyup', 'space', function(e) {
-    keyboard[e.data.keys] = false;
-  });
-  $('#canvas').on('mousemove', function(e) {
-    crosshairs.x = e.offsetX;
-    crosshairs.y = e.offsetY;
-    if(e.offsetX < 0 || e.offsetX > CANVAS_WIDTH) {
-      crosshairs.x = prevPos[0] || (CANVAS_WIDTH/2 - 15);
-      crosshairs.y = prevPos[1] || (CANVAS_HEIGHT/2 - 15);
-    }
-    if(e.offsetY < 0 || e.offsetY > (CANVAS_HEIGHT - ground.height - (new City()).height - 15)) {
-      crosshairs.x = prevPos[0] || (CANVAS_WIDTH/2 - 15);
-      crosshairs.y = prevPos[1] || (CANVAS_HEIGHT/2 - 15);
-    }
-    prevPos = [crosshairs.x, crosshairs.y];
-  });
-  $('#canvas').on('click', function(e) {
-    firePlayerMissile(crosshairs.x, crosshairs.y);
-  });
-}
-
+// Setup 
 function initCities() {
   for(var i=0; i<4; i++) {
     var newCity = new City(i);
@@ -167,7 +142,33 @@ function initEnemyMissiles() {
   }
 }
 
-// Updating
+var prevPos;
+function listen() { 
+  $(document).bind('keydown', 'space', function(e) {
+    keyboard[e.data.keys] = true;
+  });
+  $(document).bind('keyup', 'space', function(e) {
+    keyboard[e.data.keys] = false;
+  });
+  $('#canvas').on('mousemove', function(e) {
+    crosshairs.x = e.offsetX;
+    crosshairs.y = e.offsetY;
+    if(e.offsetX < 0 || e.offsetX > CANVAS_WIDTH) {
+      crosshairs.x = prevPos[0] || (CANVAS_WIDTH/2 - 15);
+      crosshairs.y = prevPos[1] || (CANVAS_HEIGHT/2 - 15);
+    }
+    if(e.offsetY < 0 || e.offsetY > (CANVAS_HEIGHT - ground.height - (new City()).height - 15)) {
+      crosshairs.x = prevPos[0] || (CANVAS_WIDTH/2 - 15);
+      crosshairs.y = prevPos[1] || (CANVAS_HEIGHT/2 - 15);
+    }
+    prevPos = [crosshairs.x, crosshairs.y];
+  });
+  $('#canvas').on('click', function(e) {
+    firePlayerMissile(crosshairs.x, crosshairs.y);
+  });
+}
+
+// Game Loop
 function updateGame() {
   if((game.state === 'next') && keyboard.space) {
     game.level += 1;
@@ -218,16 +219,52 @@ function updateGame() {
   }
 }
 
+function updatePlayer() {
+
+};
+
+function updatePlanes() {
+
+};
+
+function updateUFOs() {
+
+};
+
+function updateCities() {
+  for(var city in cities) {
+    var city = cities[city];
+    if(city.destroyed) {
+      var index = cities.indexOf(city);
+      cities.splice(index, 1);
+    }
+  }
+}
+
+function updateBases() {
+  for(var base in bases) {
+    var base = bases[base];
+    if(base.destroyed) {
+      var index = bases.indexOf(base);
+      bases.splice(index, 1);
+    }
+  }
+}
+
 function updateFiredMissiles() {
   if(firedMissiles.length) {
     for(var missile in firedMissiles) {
       var missile = firedMissiles[missile];
       var pathToTarget = new Vector(missile.targetX - Math.round(missile.x), missile.targetY - Math.round(missile.y));
       var distance = Math.floor(Vector.vectorLength(pathToTarget));
-      if(distance <= MISSILE_SPEED) {
-        // account for the MISSILE_SPEED offset
-        missile.x = missile.targetX;
-        missile.y = missile.targetY;
+      if(distance <= MISSILE_SPEED || missile.destroyed) {
+        if(missile.destroyed && missile.owner === 'enemy') {
+          player.destroyedMissiles.push(missile);
+        } else {
+          // account for the MISSILE_SPEED offset
+          missile.x = missile.targetX;
+          missile.y = missile.targetY;
+        }
         // blow it up
         missile.flying = false;
         explosions.push(new Explosion(missile));
@@ -249,31 +286,82 @@ function updateFiredMissiles() {
 function updateExplosions() {
   for(var explosion in explosions) {
     var explosion = explosions[explosion];
-    if(explosion.counter >= EXPLOSION_SIZE) {
+
+    // check collisions with missiles
+    for(var missile in firedMissiles) {
+      var missile = firedMissiles[missile];
+      if(explosionCollided(explosion, missile)) {
+        console.log("Explosion collided with missile");
+        missile.destroyed = true;
+      }      
+    }
+    // check collisions with cities
+    for(var city in cities) {
+      var city = cities[city];
+      if(explosionCollided(explosion, city)) {
+        city.destroyed = true;
+      }
+    }
+    // check collisions with bases
+    for(var base in bases) {
+      var base = bases[base];
+      if(explosionCollided(explosion, base)) {
+        base.destroyed = true;
+      }
+    }
+
+    if(explosion.counter === 0) {
       index = explosions.indexOf(explosion);  
       explosions.splice(index, 1);
-    } else {
+    } else if(!explosion.shrinking) {
       explosion.counter += 2;
+      if(explosion.counter >= EXPLOSION_SIZE) {
+        explosion.shrinking = true;
+      }
+    } else if(explosion.shrinking) {
+      explosion.counter -= 4;
+      if(explosion.counter <= 0) {
+        explosion.counter = 0;
+      }
     }
+    explosion.height = explosion.width = explosion.counter * 2;
   }
 }
 
-function updateCities() {
-  for(var city in cities) {
-    var city = cities[city];
-    if(city.destroyed) {
-      var index = cities.indexOf(city);
-      cities.splice(index, 1);
-    }
-  }
-}
+// Not sure I need this
+function updateCollisions() {
+  for(var missile in firedMissiles) {
+    var missile = firedMissiles[missile];
 
-function updateBases() {
-  for(var base in bases) {
-    var base = bases[base];
-    if(base.destroyed) {
-      var index = bases.indexOf(base);
-      bases.splice(index, 1);
+    // first, check player missiles
+    if(missile.owner === 'player') {
+      for(var enemyMissile in firedMissiles) {
+        var enemyMissile = firedMissiles[enemyMissile];
+        if(missile.owner === 'enemy') {
+          if(collided(missile, enemyMissile)) {
+            enemyMissile.destroyed = true;
+            missile.destroyed = true;
+          }
+        }
+      }
+    // then check enemy missiles  
+    } else {
+      // check collisions with cities
+      for(var city in cities) {
+        var city = cities[city];
+        if(collided(missile, city)) {
+          missile.destroyed = true;
+          city.destroyed = true;
+        }
+      }
+      // check collisions with bases
+      for(var base in bases) {
+        var base = bases[base];
+        if(collided(missile, base)) {
+          missile.destroyed = true;
+          base.destroyed = true;
+        }
+      }
     }
   }
 }
@@ -367,7 +455,7 @@ function drawFiredMissiles(c) {
     var missile = firedMissiles[missile];
     if(missile.flying) {
       c.fillRect(missile.x, missile.y, missile.width, missile.height);
-      
+
       // can't get rotate to work 
       // if(missile.direction === 'east') { 
       //   c.save();
@@ -394,7 +482,6 @@ function drawExplosions(c) {
     if(explosion.counter >= EXPLOSION_SIZE) {
       continue;
     } else {
-      explosion.height = explosion.width = explosion.counter * 2;
       c.fillStyle = 'orange';    
       c.moveTo(explosion.x, explosion.y);
       c.beginPath();
@@ -407,19 +494,56 @@ function drawExplosions(c) {
 // Helpers
 function findNearestBase(x) {
   var third = x/CANVAS_WIDTH;
-  if(third > 0 && third < 0.33 && bases[0].missiles.length) {
+  if(bases[0] && third > 0 && third < 0.33 && bases[0].missiles.length) {
     return bases[0];
-  } else if (third >= 0.33 && third < 0.66 && bases[1].missiles.length) {
+  } else if (bases[1] && third >= 0.33 && third < 0.66 && bases[1].missiles.length && !bases[1].destroyed) {
     return bases[1];
-  } else if (third >= 0.66 && third <= 1 && bases[2].missiles.length) {
+  } else if (bases[2] && third >= 0.66 && third <= 1 && bases[2].missiles.length && !bases[2].destroyed) {
     return bases[2];
   } else {
     for(var i=0; i<bases.length; i++) {
-      if(bases[i].missiles.length) {
+      if(bases[i].missiles.length && !bases[i].destroyed) {
         return bases[i];
       } 
     }
   }
+}
+
+// Thanks to http://joshondesign.com/p/books/canvasdeepdive
+function collided(a, b) {
+    //check for horz collision
+    if(b.x + b.width >= a.x && b.x < a.x + a.width) {
+        //check for vert collision
+        if(b.y + b.height >= a.y && b.y < a.y + a.height) {
+            return true;
+        }
+    }
+    //check a inside b
+    if(b.x <= a.x && b.x + b.width >= a.x+a.width) {
+        if(b.y <= a.y && b.y + b.height >= a.y + a.height) {
+            return true;
+        }
+    }
+    //check b inside a
+    if(a.x <= b.x && a.x + a.width >= b.x+b.width) {
+        if(a.y <= b.y && a.y + a.height >= b.y+b.height) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function explosionCollided(explosion, object) {
+  object.radius = object.width / 2 || 1;
+  explosion.radius = explosion.width / 2;
+  var dx = explosion.x - object.x;
+  var dy = explosion.y - object.y;
+  var distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (distance < explosion.radius + object.radius) {
+    return true;
+  }
+  return false;
 }
 
 // Thanks to https://www.smashingmagazine.com/2015/09/principles-of-html5-game-design/ 
