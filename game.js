@@ -24,7 +24,7 @@ var c = $canvasElement[0].getContext('2d');
 // Game elements
 var game = {
   state: 'start',
-  level: 0,
+  level: 1,
   levelScore: 0,
   totalScore: 0,
   counter: 0
@@ -172,11 +172,10 @@ function initUFOs() {
 }
 
 function initPlanes() {
-  planes.push(new Plane());
-  // var planeCount = Math.round(Math.random() * (game.level));
-  // for(var i=0; i<planeCount; i++) {
-  //   planes.push(new Plane());
-  // }
+  var planeCount = Math.round(Math.random() * (game.level));
+  for(var i=0; i<planeCount; i++) {
+    planes.push(new Plane());
+  }
 }
 
 function listen() { 
@@ -201,58 +200,82 @@ function listen() {
     prevPos = [crosshairs.x, crosshairs.y];
   });
   $('#canvas').on('click', function(e) {
-    firePlayerMissile(crosshairs.x, crosshairs.y);
+    if(game.state === 'playing') {
+      firePlayerMissile(crosshairs.x, crosshairs.y);
+    } else if (game.state === 'start' || game.state === 'paused') {
+      console.log("starting game");
+      game.state = 'playing';
+    }
   });
 }
 
 // Game Loop
 function updateGame() {
-  if((game.state === 'next') && keyboard.space) {
-    game.level += 1;
-    game.state = 'playing';
+  // Winning
+  if(game.state === 'next' && game.level === 10) {
+    overlay.title = 'You Won!';
+    overlay.subtitle = '10 levels beaten with a score of ' + game.totalScore;
+    game.state = 'start';
   }
-  if((game.state === 'lost') && keyboard.space) {
-    console.log("re-starting");    
-    game.state = 'playing';
-  }
-  // if((game.state === 'paused') && keyboard.space) {
-  //   console.log("unpausing game");
-  //   game.state = 'playing';
-  // } else if((game.state === 'playing') && keyboard.space) {
-  //   console.log("pausing game");
-  //   game.state = 'paused';
-  // }
-  if((game.state === 'playing') && bases.length === 0){
-    overlay.title = 'You lost';
-    overlay.subTitle = 'Press spacebar to start again';
-    game.state === 'lost';
-  }
-  if(game.state === 'playing' 
-      && firedMissiles.length === 0 && enemyMissiles.length === 0) {
-    game.state = 'next';
-    overlay.title = 'You beat level ' + game.level + '!';
-    overlay.subTitle = 'Your score: ' + game.levelScore;
-  }
-  // if((game.state === 'playing') && keyboard.space) {
-  //   console.log(keyboard);
-  //   console.log("pausing game");
-  //   game.state = 'paused';
-  // }
-  if(game.state === 'playing') {
-    game.counter += 1;
-    if(game.counter % LAUNCH_RATE === 0 
-        && game.counter / LAUNCH_RATE < game.level + 10) {
-      console.log("launching an enemy missile");
-      var target = targets[Math.floor(Math.random() * targets.length)];
-      var x = target.x + (target.width / 2);
-      var y = target.y;
-      fireEnemyMissile(x, y);
+
+  // When in playing state
+  if(game.state === 'playing')  {
+    // Losing
+    if(!cities.length || !bases.length) {
+      overlay.title = 'You lost';
+      overlay.subTitle = 'Press spacebar to start again';
+      game.state = 'lost';
+      restartGame(true);
+
+    // Going to next level
+    } else if(!firedMissiles.length 
+          && !enemyMissiles.length && !explosions.length) {
+      game.state = 'next';
+      overlay.title = 'You beat level ' + game.level + '!';
+      overlay.subTitle = 'Your score: ' + game.levelScore;
+      planes = [];
+      ufos = [];
+      game.levelScore = 0;
+
+    // Pause game
+    } else if(keyboard.space) {
+      console.log("pausing game");
+      keyboard = {};
+      game.state = 'paused';
+
+    // By default fire enemy missiles at random targets
+    } else {
+      overlay.title = '';
+      overlay.subtitle = '';
+      game.counter += 1;
+      if(game.counter % LAUNCH_RATE === 0 && enemyMissiles.length) {
+        console.log("launching an enemy missile");
+        var target = targets[Math.floor(Math.random() * targets.length)];
+        var x = target.x + (target.width / 2);
+        var y = target.y;
+        fireEnemyMissile(x, y);
+      }
     }
   }
-  if((game.state === 'start') && keyboard.space) {
-    console.log("starting game");
+
+  // Restarting from next state
+  if(game.state === 'next' && keyboard.space) {
+    keyboard = {};
+    game.level += 1;
+    setup();
     game.state = 'playing';
-    game.level = 1;
+  }
+  // Begin game from start state
+  if((game.state === 'start' || game.state === 'lost') && keyboard.space) {
+    console.log("starting game");
+    restartGame();
+    keyboard = {};
+  }
+  // Unpause game
+  if(game.state === 'paused' && keyboard.space) {
+    console.log("resuming game");
+    game.state = 'playing';
+    keyboard = {};
   }
 }
 
@@ -410,43 +433,6 @@ function updateExplosions() {
   }
 }
 
-// Not sure I need this
-function updateCollisions() {
-  for(var missile in firedMissiles) {
-    var missile = firedMissiles[missile];
-
-    // first, check player missiles
-    if(missile.owner === 'player') {
-      for(var enemyMissile in firedMissiles) {
-        var enemyMissile = firedMissiles[enemyMissile];
-        if(missile.owner === 'enemy') {
-          if(collided(missile, enemyMissile)) {
-            enemyMissile.destroyed = true;
-            missile.destroyed = true;
-          }
-        }
-      }
-    // then check enemy missiles  
-    } else {
-      // check collisions with cities
-      for(var city in cities) {
-        var city = cities[city];
-        if(collided(missile, city)) {
-          missile.destroyed = true;
-          city.destroyed = true;
-        }
-      }
-      // check collisions with bases
-      for(var base in bases) {
-        var base = bases[base];
-        if(collided(missile, base)) {
-          missile.destroyed = true;
-          base.destroyed = true;
-        }
-      }
-    }
-  }
-}
 
 // Acting
 function firePlayerMissile(x,y) {
@@ -502,7 +488,7 @@ function launchPlane() {
   var random = Math.floor(Math.random() * 2);
   plane.direction = directions[random];
   plane.x = plane.direction === 'east' ? plane.x = 0 - (plane.width + 5) : plane.x = CANVAS_WIDTH + 5;
-  plane.y = CANVAS_HEIGHT - 400;
+  plane.y = CANVAS_HEIGHT - 350;
 }
 
 
@@ -709,4 +695,22 @@ Vector.normalize = function(vector) {
     return vector;
   }
 };
+
+function restartGame(cleanupOnly) {
+    cities = [];
+    bases = [];
+    planes = [];
+    ufos = [];
+    enemyMissiles = [];
+    firedMissiles = [];
+    explosions = [];
+    game.counter = 0;
+    game.level = 1;    
+    if(!cleanupOnly) {
+      game.levelScore = 0;
+      game.totalScore = 0;
+      setup();
+      game.state = 'playing';
+    }
+}
 

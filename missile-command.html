@@ -10,7 +10,7 @@
 
   <h1>Missile Command</h1>
 
-  <p>Press space to start.</p>
+  <p>Press space to start, pause and resume the game.</p>
     
   <canvas id="canvas"></canvas>  
 
@@ -39,13 +39,15 @@
 
     function gameLoop() {
       updateGame();
+      if(game.state === 'playing') {
+        updatePlanes();
+        updateUFOs();
+        updateCities();
+        updateBases();
+        updateFiredMissiles();
+        updateExplosions();
+      }
       // updatePlayer();
-      updatePlanes();
-      updateUFOs();
-      updateCities();
-      updateBases();
-      updateFiredMissiles();
-      updateExplosions();
 
       drawBackground(c);
       drawBases(c);
