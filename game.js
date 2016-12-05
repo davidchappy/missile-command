@@ -246,7 +246,7 @@ function updateGame() {
     // By default fire enemy missiles at random targets
     } else {
       overlay.title = '';
-      overlay.subtitle = '';
+      overlay.subTitle = '';
       game.counter += 1;
       if(game.counter % LAUNCH_RATE === 0 && enemyMissiles.length) {
         console.log("launching an enemy missile");
@@ -394,6 +394,7 @@ function updateExplosions() {
       var base = bases[base];
       if(explosionCollided(explosion, base)) {
         base.destroyed = true;
+        base.missiles = [];
       }
     }
 
@@ -521,6 +522,22 @@ function drawCrosshairs(c) {
   c.closePath();
   c.strokeStyle = 'white';
   c.stroke();
+}
+
+function drawOverlay(c) {
+  if(overlay.title) {
+    c.fillStyle = 'white';
+    c.font = "3em Arial";
+    var titleHalf = c.measureText(overlay.title).width / 2;
+    c.fillText(overlay.title, (CANVAS_WIDTH / 2) - titleHalf, 150);
+  }
+ 
+  if(overlay.subTitle) {
+    c.fillstyle = 'gray';
+    c.font = "1.5em Arial";
+    var subTitleHalf = c.measureText(overlay.subTitle).width / 2;
+    c.fillText(overlay.subTitle, (CANVAS_WIDTH / 2) - subTitleHalf, 200);
+  }
 }
 
 function drawBases(c) {
