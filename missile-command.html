@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Missile Command</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <p>Press space to start.</p>
+    
+  <canvas id="canvas"></canvas>  
+
+  <script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-3.1.1.min.js"></script>
+  <script>
+  if (typeof jQuery == 'undefined') {
+      document.write(unescape("%3Cscript src='/js/jquery-3.1.1.min.js' type='text/javascript'%3E%3C/script%3E"));
+  }
+  </script>
+  <script src="jquery.hotkeys.js"></script>
+  <script src="game.js"></script>
+  <script>
+  
+
+    function setup(starting) {
+      initCities();
+      initBases();
+      initPlayerMissiles();
+      initEnemyMissiles();
+      // drawBackground(c);
+      if(starting) {
+        listen();
+      }
+    }
+
+    function gameLoop() {
+      updateGame();
+      // updatePlayer();
+      // updatePlanes();
+      // updateUFOs();
+      updateCities();
+      updateBases();
+      updateFiredMissiles();
+      updateExplosions();
+      // updateCollisions();
+
+      drawBackground(c);
+      drawBases(c);
+      drawCities(c);
+      drawFiredMissiles(c);
+      drawExplosions(c);
+      // drawUFOs(c);
+      // drawPlanes(c);
+      // drawOverlay(c);
+      drawCrosshairs(c);
+    }
+
+    setup(true);
+    setInterval(gameLoop,1000/FPS);
+  </script>
+
+
+</body>
+</html>
