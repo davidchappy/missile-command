@@ -179,7 +179,6 @@ function initPlanes() {
   // }
 }
 
-var prevPos;
 function listen() { 
   $(document).bind('keydown', 'space', function(e) {
     keyboard[e.data.keys] = true;
@@ -187,6 +186,7 @@ function listen() {
   $(document).bind('keyup', 'space', function(e) {
     keyboard[e.data.keys] = false;
   });
+  var prevPos = [];
   $('#canvas').on('mousemove', function(e) {
     crosshairs.x = e.offsetX;
     crosshairs.y = e.offsetY;
