@@ -393,7 +393,7 @@ function updateFiredMissiles() {
         // blow up the missile
         missile.flying = false;
         explosions.push(new Explosion(missile));
-        playSound('explosion.wav');
+        playSound(explosionSound);
         index = firedMissiles.indexOf(missile);  
         firedMissiles.splice(index, 1);
       } else {
@@ -449,7 +449,7 @@ function updateExplosions() {
 // Acting
 function firePlayerMissile(x,y) {
   // get missile from base and launch it
-  if(game.sound) playSound('shoot.wav');
+  if(game.sound) playSound(shootSound);
   var base = findNearestBase(x);
   if(base) {
     var missile = base.missiles.splice([base.missiles.length-1], 1)[0];
@@ -712,8 +712,7 @@ function drawPlanes(c) {
 
 // Helpers
 function playSound(soundFile) {
-  var snd = new Audio('sounds/' + soundFile);
-  snd.play();
+  soundFile.play();
 }
 
 function findNearestBase(x) {
