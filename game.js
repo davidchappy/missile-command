@@ -17,11 +17,13 @@ var REMAINING_BASE_SCORE = 2;
 var REMAINING_CITY_SCORE = 5;
 
 // Assets
-var missile_image = '';
-var city_image = '';
-var plane_image = '';
-var ufo_image = '';
-var crosshairs_image = '';
+var missile_image = 'images/missile_sprite.png';
+var city_image = 'images/city.png';
+var base_image = 'images/base.png';
+var plane_image_east = 'images/planeeast.png';
+var plane_image_west = 'images/planewest.png';
+var ufo_image = 'images/ufo.png';
+var ufo_image_inverse = 'images/ufo2.png';
 
 // Canvas
 var $canvasElement = $("#canvas");
@@ -62,8 +64,13 @@ var cities = [];
 function City(index) {
   this.destroyed = false;
   this.height = 35;
-  this.width = 25;
-  this.x = 75 + index*100 + this.width/2;
+  this.width = 35;
+  // this.x = 65 + index*100 + this.width/2;
+  if(index <= 1) {
+    this.x = 55 + index*95 + this.width/2;
+  } else {
+    this.x = 90 + index*95 + this.width/2;
+  }
   this.y = CANVAS_HEIGHT - ground.height - this.height;
 };
 
@@ -72,9 +79,9 @@ var bases = [];
 function Base(index) {
   this.destroyed = false;
   this.missiles = [];
-  this.height = 20;
-  this.width = 40;
-  this.x = index*210 + this.width/2;
+  this.height = 31;
+  this.width = 30;
+  this.x = index*220 + this.width/2;
   this.y = CANVAS_HEIGHT - ground.height - this.height;
 }
 
@@ -86,10 +93,11 @@ var targets = [];
 
 function Missile() {
   this.flying = false;
-  this.height = 5;
-  this.width = 2;
+  this.height = 21;
+  this.width = 6;
   this.travelUnit = {};
   this.destroyed = false;
+  this.heading = 0;
 };
 
 var explosions = [];
@@ -152,11 +160,11 @@ function initPlayerMissiles() {
       var newMissile = new Missile();
       base.missiles.push(newMissile);
       if(i<5) {
-        newMissile.y = base.y + 3;
-        newMissile.x = base.x + 5 + (i*7);
+        newMissile.y = base.y + 34;
+        newMissile.x = base.x - 2 + (i*7);
       } else {
-        newMissile.y = base.y + 12;
-        newMissile.x = base.x + 5 + ((i-5)*7);
+        newMissile.y = base.y + 54;
+        newMissile.x = base.x - 2 + ((i-5)*7);
       }
     }
   }
@@ -173,17 +181,17 @@ function initEnemyMissiles() {
 }
 
 function initUFOs() {
-  var ufoCount = Math.round(Math.random() * (game.level));
-  for(var i=0; i<ufoCount; i++) {
+  // var ufoCount = Math.round(Math.random() * (game.level));
+  // for(var i=0; i<ufoCount; i++) {
     ufos.push(new UFO());
-  }
+  // }
 }
 
 function initPlanes() {
-  var planeCount = Math.round(Math.random() * (game.level));
-  for(var i=0; i<planeCount; i++) {
+  // var planeCount = Math.round(Math.random() * (game.level));
+  // for(var i=0; i<planeCount; i++) {
     planes.push(new Plane());
-  }
+  // }
 }
 
 function listen() { 
@@ -473,14 +481,36 @@ function fireEnemyMissile(x,y) {
 
 function fireMissile(missile,x,y) {
   firedMissiles.push(missile);
+
+  // get vector to target
   missile.targetX = x;
   missile.targetY = y;
   var pathToTarget = new Vector(x - missile.x, y - missile.y);
+  
+  // get direction in degrees for missile angle and assign direction
+  var radians = Math.atan2(pathToTarget.y, pathToTarget.x);
+  var degrees = Math.round(radians * (180 / Math.PI));
+  if(degrees <= 22.5 && degrees >= -22.5) {
+    missile.direction = 'e';
+  } else if (degrees < -22.5 && degrees >= -67.5) {
+    missile.direction = 'ne';
+  } else if (degrees < -67.5 && degrees >= -112.5) {
+    missile.direction = 'n';
+  } else if (degrees < -112.5 && degrees >= -157.5) {
+    missile.direction = 'nw';
+  } else if (degrees < -157.5 && degrees >= -190) {
+    missile.direction = 'w';
+  } else if (degrees < 157.5 && degrees >= 112.5) {
+    missile.direction = 'sw';
+  } else if (degrees < 112.5 && degrees >= 67.5) {
+    missile.direction = 's';
+  } else if (degrees < 67.5 && degrees >= 22.5) {
+    missile.direction = 'se';
+  }
+
+  // get travel unit for updating position
   missile.travelUnit = Vector.normalize(pathToTarget);
   missile.flying = true;
-  // shrink missile to head
-  missile.height = 2;
-  missile.width = 2;
 }
 
 function launchUFO() {
@@ -540,10 +570,10 @@ function drawOverlay(c) {
   c.fillStyle = 'gray';
   c.font = "1em Arial";
   var levelScore = "Level Score: " + game.levelScore;
-  c.fillText(levelScore, 30, 15);
+  c.fillText(levelScore, 30, 25);
 
   var totalScore = "Total Score: " + game.totalScore;
-  c.fillText(totalScore, CANVAS_WIDTH - c.measureText(totalScore).width - 30, 15);
+  c.fillText(totalScore, CANVAS_WIDTH - c.measureText(totalScore).width - 30, 25);
 
   if(overlay.title) {
     c.fillStyle = 'white';
@@ -561,20 +591,25 @@ function drawOverlay(c) {
 }
 
 function drawBases(c) {
-  c.fillStyle = 'green';
   for(var base in bases) {
     var base = bases[base];
     if(!base.destroyed) {
-      c.fillRect(base.x, base.y, base.width, base.height);
+      baseImage = new Image();
+      baseImage.src = base_image;   
+      c.drawImage(baseImage, base.x, base.y, baseImage.width, baseImage.height);
     }
   }
-  c.fillStyle = 'purple';
   for(var base in bases) {
     var base = bases[base];
     if(!base.destroyed) {
       for(var missile in base.missiles) {
         var missile = base.missiles[missile];
-        c.fillRect(missile.x, missile.y, missile.width, missile.height);
+        missileImage = new Image();
+        missileImage.src = missile_image;   
+        c.drawImage(
+          missileImage, 
+          0,0,6,21,
+          missile.x, missile.y, missile.width, missile.height);
       }
     }
   }
@@ -584,8 +619,9 @@ function drawCities(c) {
   for(var city in cities) {
     var city = cities[city];
     if(!city.destroyed) {
-      c.fillStyle = 'gray';
-      c.fillRect(city.x, city.y, city.width, city.height);
+      cityImage = new Image();
+      cityImage.src = city_image; 
+      c.drawImage(cityImage, city.x, city.y, cityImage.width, cityImage.height);
     }
   }
 }
@@ -593,30 +629,38 @@ function drawCities(c) {
 function drawFiredMissiles(c) {
   for(var missile in firedMissiles) {
     var missile = firedMissiles[missile];
-    if(missile.owner === 'enemy') {
-      c.fillStyle = 'red';
-    } else {
-      c.fillStyle = 'white';
+    if(missile.direction === 'n') {
+      var x = 0;
+      var w = 10;
+    } else if (missile.direction === 'ne') {
+      var x = 21;
+      var w = 17;
+    } else if (missile.direction === 'e') {
+      var x = 42;
+      var w = 21;
+    } else if (missile.direction === 'se') {
+      var x = 63;
+      var w = 17;
+    } else if (missile.direction === 's') {
+      var x = 84;
+      var w = 10;
+    } else if (missile.direction === 'sw') {
+      var x = 105;
+      var w = 17;
+    } else if (missile.direction === 'w') {
+      var x = 126;
+      var w = 21;
+    } else if (missile.direction === 'nw') {
+      var x = 147      
+      var w = 17;
     }
     if(missile.flying) {
-      c.fillRect(missile.x, missile.y, missile.width, missile.height);
-
-      // can't get rotate to work 
-      // if(missile.direction === 'east') { 
-      //   c.save();
-      //   c.translate(missile.x, missile.y + (missile.height/2));
-      //   c.rotate(Math.PI / 4);
-      //   c.fillRect(missile.x, missile.y, missile.width, missile.height);
-      //   c.restore();
-      // } else if(missile.direction === 'west') {
-      //   c.save();
-      //   c.translate(missile.x, missile.y + (missile.height/2));
-      //   c.rotate(Math.PI / 2);
-      //   c.fillRect(missile.x, missile.y, missile.width, missile.height);
-      //   c.restore();
-      // } else {
-      //   c.fillRect(missile.x, missile.y, missile.width, missile.height);
-      // }
+      missileImage = new Image();
+      missileImage.src = missile_image;   
+      c.drawImage(
+      missileImage, 
+      x,0,21,21,
+      missile.x, missile.y, w, 21);
     }
   }
 }
@@ -640,8 +684,13 @@ function drawUFOs(c) {
   for(var ufo in ufos) {
     var ufo = ufos[ufo];
     if(ufo.flying) {
-      c.fillStyle = 'yellow';
-      c.fillRect(ufo.x, ufo.y, ufo.width, ufo.height);
+      ufoImage = new Image();
+      if(game.counter % 10 === 0) {
+        ufoImage.src = ufo_image; 
+      } else {
+        ufoImage.src = ufo_image_inverse; 
+      }
+      c.drawImage(ufoImage, ufo.x, ufo.y, ufoImage.width, ufoImage.height);
     }
   }
 }
@@ -650,8 +699,13 @@ function drawPlanes(c) {
   for(var plane in planes) {
     var plane = planes[plane];
     if(plane.flying) {
-      c.fillStyle = 'green';
-      c.fillRect(plane.x, plane.y, plane.width, plane.height);
+      planeImage = new Image();
+      if(plane.direction === 'east') {
+        planeImage.src = plane_image_east; 
+      } else {
+        planeImage.src = plane_image_west; 
+      }
+      c.drawImage(planeImage, plane.x, plane.y, planeImage.width, planeImage.height);
     }
   }
 }
