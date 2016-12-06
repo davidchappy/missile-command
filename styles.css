@@ -9,6 +9,11 @@ canvas {
   cursor: none;
 }
 
-p, h1 {
+p, h1, a {
   text-align: center;
+  display: block;
+}
+
+.reference a {
+  display: inline;
 }

@@ -7,6 +7,7 @@ var EXPLOSION_SIZE = 24;
 var LAUNCH_RATE = 50;
 var UFO_SPEED = 3;
 var PLANE_SPEED = 2;
+var FADE_RATE = 15;
 
 // Scoring
 var UFO_SCORE = 5;
@@ -38,7 +39,8 @@ var game = {
   level: 1,
   levelScore: 0,
   totalScore: 0,
-  counter: 0
+  counter: 0,
+  sound: true
 };
 
 var keyboard = {
@@ -114,7 +116,14 @@ function Explosion(object) {
 var overlay = {
   title: 'Missile Command',
   subTitle: 'Press spacebar to start',
-  flash: ''
+  flash: [],
+  counter: -1,
+  addFlash: function(message, x, y, duration) {
+    this.flash[0] = message;
+    this.flash[1] = x;
+    this.flash[2] = y;
+    this.counter = duration;
+  }
 };
 
 var ufos = [];
@@ -196,6 +205,16 @@ function initialize(gameElement, array, count, target) {
 }
 
 function listen() { 
+  $(document).on('click', '#sound-control', function(e) {
+    e.preventDefault();
+    if(game.sound) {
+      game.sound = false;
+      $(this).text('Turn on sound');
+    } else {
+      game.sound = true;
+      $(this).text('Turn off sound');[]
+    }
+  });
   $(document).bind('keydown', 'space', function(e) {
     keyboard[e.data.keys] = true;
   });
@@ -277,6 +296,7 @@ function updateGame() {
     } else {
       overlay.title = '';
       overlay.subTitle = '';
+      if(overlay.counter != -1) overlay.counter -= 1;
       game.counter += 1;
       if(game.counter % LAUNCH_RATE === 0 && enemyMissiles.length) {
         console.log("launching an enemy missile");
@@ -373,6 +393,7 @@ function updateFiredMissiles() {
         // blow up the missile
         missile.flying = false;
         explosions.push(new Explosion(missile));
+        playSound('explosion.wav');
         index = firedMissiles.indexOf(missile);  
         firedMissiles.splice(index, 1);
       } else {
@@ -428,6 +449,7 @@ function updateExplosions() {
 // Acting
 function firePlayerMissile(x,y) {
   // get missile from base and launch it
+  if(game.sound) playSound('shoot.wav');
   var base = findNearestBase(x);
   if(base) {
     var missile = base.missiles.splice([base.missiles.length-1], 1)[0];
@@ -437,9 +459,9 @@ function firePlayerMissile(x,y) {
           - (ground.height+base.height) - (crosshairs.radius/2);
     missile.owner = 'player';
     fireMissile(missile,x,y);
-  } else {
-    console.log("All out of missiles");
-    overlay.flash = "All out of missiles";
+  }
+  if(base && !base.missiles.length) {
+    overlay.addFlash("OUT", base.x, base.y+50, 70);
   }
 }
 
@@ -550,7 +572,9 @@ function drawOverlay(c) {
   // Draw text elements
   if(overlay.title) drawText(c, overlay.title, "3em Arial", "white", 150);
   if(overlay.subTitle) drawText(c, overlay.subTitle, "1.5em Arial", "white", 200);
-  // drawText(c, overlay.flash[0], "1em Arial", "white", overlay.flash[2], overlay.flash[1]);
+  if(overlay.counter >= 0) {
+    drawText(c, overlay.flash[0], "1em Arial", "white", overlay.flash[2], overlay.flash[1]);
+  }
 }
 
 function drawText(c, elementText, font, color, y, x) {
@@ -687,6 +711,11 @@ function drawPlanes(c) {
 }
 
 // Helpers
+function playSound(soundFile) {
+  var snd = new Audio('sounds/' + soundFile);
+  snd.play();
+}
+
 function findNearestBase(x) {
   var third = x/CANVAS_WIDTH;
   if(bases[0] && third > 0 && third < 0.33 && bases[0].missiles.length) {
