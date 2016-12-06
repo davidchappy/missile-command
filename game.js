@@ -46,8 +46,8 @@ var keyboard = {
 };
 
 var crosshairs = {
-  x: (CANVAS_WIDTH/2 - 15),
-  y: (CANVAS_HEIGHT/2 - 15),
+  x: CANVAS_WIDTH/2 - 15,
+  y: CANVAS_HEIGHT/2 - 15,
   radius: 10,
   fired: false
 };
@@ -120,6 +120,7 @@ var overlay = {
 var ufos = [];
 
 function UFO() {
+  this.destroyed = false;
   this.flying = false;
   this.height = 20;
   this.width = 20;
@@ -139,60 +140,59 @@ function Plane() {
 
 // Setup 
 function initCities() {
-  for(var i=0; i<4; i++) {
-    var newCity = new City(i);
-    cities.push(newCity);
-    targets.push(newCity);
-  }
+  cities = initialize(City, cities, 4, true);
 }
 
 function initBases() {
-  for(var i=0; i<3; i++) {
-    var newBase = new Base(i);
-    bases.push(newBase);
-    targets.push(newBase);
-  }
+  bases = initialize(Base, bases, 3, true);
 }
 
 function initPlayerMissiles() {
   for(var base in bases) {
-    var base = bases[base];
-    for(var i=0; i<10; i++) {
-      var newMissile = new Missile();
-      base.missiles.push(newMissile);
+    var base = bases[base]; 
+    base.missiles = initialize(Missile, [], 10);
+    for(var missile in base.missiles) {
+      var missile = base.missiles[missile];
+      var i = base.missiles.indexOf(missile);
       if(i<5) {
-        newMissile.y = base.y + 34;
-        newMissile.x = base.x - 2 + (i*7);
+        // row 1 of missiles
+        missile.y = base.y + 34;
+        missile.x = base.x - 2 + (i*7);
       } else {
-        newMissile.y = base.y + 54;
-        newMissile.x = base.x - 2 + ((i-5)*7);
+        // row 2 of missiles
+        missile.y = base.y + 54;
+        missile.x = base.x - 2 + ((i-5)*7);
       }
     }
   }
 }
 
 function initEnemyMissiles() {
-  for(var i=0; i<10+game.level; i++) {
-    var newMissile = new Missile();
-    // randomly choose starting position
-    newMissile.y = 0;
-    newMissile.x = Math.floor(Math.random() * CANVAS_WIDTH) + 1;
-    enemyMissiles.push(newMissile);
+  enemyMissiles = initialize(Missile, enemyMissiles, 10+game.level);
+  for(var missile in enemyMissiles) {
+    var missile = enemyMissiles[missile];
+    missile.y = 0;
+    missile.x = Math.floor(Math.random() * CANVAS_WIDTH) + 1;
   }
 }
 
 function initUFOs() {
-  // var ufoCount = Math.round(Math.random() * (game.level));
-  // for(var i=0; i<ufoCount; i++) {
-    ufos.push(new UFO());
-  // }
+  var ufoCount = Math.round(Math.random() * (game.level));
+  ufos = initialize(UFO, ufos, ufoCount);
 }
 
 function initPlanes() {
-  // var planeCount = Math.round(Math.random() * (game.level));
-  // for(var i=0; i<planeCount; i++) {
-    planes.push(new Plane());
-  // }
+  var planeCount = Math.round(Math.random() * (game.level));
+  planes = initialize(Plane, planes, planeCount);
+}
+
+function initialize(gameElement, array, count, target) {
+  for(var i=0; i<count; i++) {
+    var newElement = new gameElement(i); 
+    array.push(newElement);
+    if(target) targets.push(newElement);
+  }
+  return array;
 }
 
 function listen() { 
@@ -310,62 +310,46 @@ function updateGame() {
   }
 }
 
-function updatePlayer() {
-
-};
-
 function updatePlanes() {
-  if(planes.length && game.counter != 0 && game.counter % 250 === 0) {
-    launchPlane();
-  }
-
-  for(var plane in planes) {
-    var plane = planes[plane];
-    if(plane.flying && plane.direction === 'east') {
-      plane.x += PLANE_SPEED;
-    } else if (plane.flying && plane.direction === 'west') {
-      plane.x -= PLANE_SPEED;
-    } else if (plane.destroyed) {
-      var index = planes.indexOf(plane);
-      planes.splice(index, 1);
-    }
-  }
+  updateFlyBys(planes, 250, launchPlane, PLANE_SPEED);
 };
 
 function updateUFOs() {
-  if(ufos.length && game.counter != 0 && game.counter % 150 === 0) {
-    launchUFO();
-  }
-
-  for(var ufo in ufos) {
-    var ufo = ufos[ufo];
-    if(ufo.flying && ufo.direction === 'east') {
-      ufo.x += UFO_SPEED;
-    } else if (ufo.flying && ufo.direction === 'west') {
-      ufo.x -= UFO_SPEED;
-    } else if (ufo.destroyed) {
-      var index = ufos.indexOf(ufo);
-      ufos.splice(index, 1);
-    }
-  }
+  updateFlyBys(ufos, 150, launchUFO, UFO_SPEED);
 };
 
-function updateCities() {
-  for(var city in cities) {
-    var city = cities[city];
-    if(city.destroyed) {
-      var index = cities.indexOf(city);
-      cities.splice(index, 1);
+function updateFlyBys(flyByArray, rate, func, speed) {
+  if(flyByArray.length && game.counter != 0 && game.counter % rate === 0) {
+    func();
+  }
+  for(var flyBy in flyByArray) {
+    var flyBy = flyByArray[flyBy];
+    if(flyBy.flying && flyBy.direction === 'east') {
+      flyBy.x += speed;
+    } else if (flyBy.flying && flyBy.direction === 'west') {
+      flyBy.x -= speed;
+    } else if (flyBy.destroyed) {
+      var index = flyByArray.indexOf(flyBy);
+      flyByArray.splice(index, 1);
     }
   }
 }
 
+function updateCities() {
+  updateStructures(cities);
+}
+
 function updateBases() {
-  for(var base in bases) {
-    var base = bases[base];
-    if(base.destroyed) {
-      var index = bases.indexOf(base);
-      bases.splice(index, 1);
+  updateStructures(bases, bases.missiles);
+}
+
+function updateStructures(structureArray, dependent) {
+  for(var structure in structureArray) {
+    var structure = structureArray[structure];
+    if(structure.destroyed) {
+      if(dependent) structureArray.dependent = null;
+      var index = structureArray.indexOf(structure);
+      structureArray.splice(index, 1);
     }
   }
 }
@@ -374,22 +358,25 @@ function updateFiredMissiles() {
   if(firedMissiles.length) {
     for(var missile in firedMissiles) {
       var missile = firedMissiles[missile];
-      var pathToTarget = new Vector(missile.targetX - Math.round(missile.x), missile.targetY - Math.round(missile.y));
+      var pathToTarget = new Vector(
+          missile.targetX - Math.round(missile.x), 
+          missile.targetY - Math.round(missile.y));
       var distance = Math.floor(Vector.vectorLength(pathToTarget));
       if(distance <= MISSILE_SPEED || missile.destroyed) {
         if(missile.destroyed && missile.owner === 'enemy') {
           player.destroyedMissiles.push(missile);
         } else {
-          // account for the MISSILE_SPEED offset
+          // account for the MISSILE_SPEED offset and "jump" missile to target coords
           missile.x = missile.targetX;
           missile.y = missile.targetY;
         }
-        // blow it up
+        // blow up the missile
         missile.flying = false;
         explosions.push(new Explosion(missile));
         index = firedMissiles.indexOf(missile);  
         firedMissiles.splice(index, 1);
       } else {
+        // otherwise keep moving
         if(missile.owner === 'player') {
           missile.x += missile.travelUnit.x * MISSILE_SPEED;
           missile.y += missile.travelUnit.y * MISSILE_SPEED;
@@ -402,61 +389,32 @@ function updateFiredMissiles() {
   }
 }
 
+function checkForExplosions(elementArray, explosion, score, flyer) {
+  for(var element in elementArray) {
+    var element = elementArray[element];
+    
+    if(explosionCollided(explosion, element)) {
+      element.destroyed = true;
+      if(flyer) element.flying = false;
+      if(score) addScore(score);
+    }      
+  }
+}
+
 function updateExplosions() {
   for(var explosion in explosions) {
     var explosion = explosions[explosion];
+    checkForExplosions(firedMissiles, explosion, MISSILE_SCORE);
+    checkForExplosions(cities, explosion);
+    checkForExplosions(bases, explosion);
+    checkForExplosions(ufos, explosion, UFO_SCORE, true);
+    checkForExplosions(planes, explosion, PLANE_SCORE, true);
 
-    // check collisions with missiles
-    for(var missile in firedMissiles) {
-      var missile = firedMissiles[missile];
-      if(explosionCollided(explosion, missile)) {
-        missile.destroyed = true;
-        addScore(MISSILE_SCORE);
-      }      
-    }
-    // check collisions with cities
-    for(var city in cities) {
-      var city = cities[city];
-      if(explosionCollided(explosion, city)) {
-        explosions.push(new Explosion(city));
-        city.destroyed = true;
-      }
-    }
-    // check collisions with bases
-    for(var base in bases) {
-      var base = bases[base];
-      if(explosionCollided(explosion, base)) {
-        explosions.push(new Explosion(base));
-        base.destroyed = true;
-        base.missiles = [];
-      }
-    }
-
-    // check collisions with UFOs
-    for(var ufo in ufos) {
-      var ufo = ufos[ufo];
-      if(explosionCollided(explosion, ufo)) {
-        explosions.push(new Explosion(ufo));
-        ufo.destroyed = true;
-        ufo.flying = false;
-        addScore(UFO_SCORE);
-      }
-    }
-
-    // check collisions with Planes
-    for(var plane in planes) {
-      var plane = planes[plane];
-      if(explosionCollided(explosion, plane)) {
-        explosions.push(new Explosion(plane));
-        plane.destroyed = true;
-        plane.flying = false;
-        addScore(PLANE_SCORE);
-      }
-    }
-
+    // remove explosion if counter is at 0
     if(explosion.counter === 0) {
       index = explosions.indexOf(explosion);  
       explosions.splice(index, 1);
+    // otherwise advance counter or reset to 0 if limit reached
     } else {
       explosion.counter += 1;
       if(explosion.counter >= 60) {
@@ -526,32 +484,35 @@ function fireMissile(missile,x,y) {
   missile.flying = true;
 }
 
-function launchUFO() {
-  var ufo = ufos[ufos.length-1];
-  ufo.flying = true;
+function launchFlyBy(flyByArray, yOffset) {
+  var flyBy = flyByArray[flyByArray.length-1];
+  flyBy.flying = true;
   var directions = ['east', 'west'];
   var random = Math.floor(Math.random() * 2);
-  ufo.direction = directions[random];
-  ufo.x = ufo.direction === 'east' ? ufo.x = 0 - (ufo.width + 5) : ufo.x = CANVAS_WIDTH + 5;
-  ufo.y = CANVAS_HEIGHT - 400;
+  flyBy.direction = directions[random];
+  flyBy.x = flyBy.direction === 'east' ? flyBy.x = 0 - (flyBy.width + 5) : flyBy.x = CANVAS_WIDTH + 5;
+  flyBy.y = CANVAS_HEIGHT - yOffset;
+}
+
+function launchUFO() {
+  launchFlyBy(ufos, 400);
 }
 
 function launchPlane() {
-  var plane = planes[planes.length-1];
-  plane.flying = true;
-  var directions = ['east', 'west'];
-  var random = Math.floor(Math.random() * 2);
-  plane.direction = directions[random];
-  plane.x = plane.direction === 'east' ? plane.x = 0 - (plane.width + 5) : plane.x = CANVAS_WIDTH + 5;
-  plane.y = CANVAS_HEIGHT - 350;
+  launchFlyBy(planes, 350);
 }
 
 
 // Drawing
 function drawBackground(c) {
+  // Clear canvas every frame
   c.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  // Sky
   c.fillStyle = 'black';
   c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT-ground.height);
+
+  // Ground
   c.fillStyle = 'brown';
   c.fillRect(0, CANVAS_HEIGHT-ground.height, CANVAS_WIDTH, ground.height);
 }
@@ -603,15 +564,21 @@ function drawOverlay(c) {
   }
 }
 
-function drawBases(c) {
-  for(var base in bases) {
-    var base = bases[base];
-    if(!base.destroyed) {
-      baseImage = new Image();
-      baseImage.src = base_image;   
-      c.drawImage(baseImage, base.x, base.y, baseImage.width, baseImage.height);
+function drawStructure(c, structureArray, asset) {
+  for(var structure in structureArray) {
+    var structure = structureArray[structure];
+    if(!structure.destroyed) {
+      structureImage = new Image();
+      structureImage.src = asset;   
+      c.drawImage(
+        structureImage, 
+        structure.x, structure.y, structureImage.width, structureImage.height);
     }
   }
+}
+
+function drawBases(c) {
+  drawStructure(c, bases, base_image);
   for(var base in bases) {
     var base = bases[base];
     if(!base.destroyed) {
@@ -629,19 +596,14 @@ function drawBases(c) {
 }
 
 function drawCities(c) {
-  for(var city in cities) {
-    var city = cities[city];
-    if(!city.destroyed) {
-      cityImage = new Image();
-      cityImage.src = city_image; 
-      c.drawImage(cityImage, city.x, city.y, cityImage.width, cityImage.height);
-    }
-  }
+  drawStructure(c, cities, city_image);
 }
 
 function drawFiredMissiles(c) {
   for(var missile in firedMissiles) {
     var missile = firedMissiles[missile];
+
+    // choose sprite image based on missile.direction
     if(missile.direction === 'n') {
       var x = 0;
       var w = 10;
@@ -691,6 +653,8 @@ function drawExplosions(c) {
   }
 }
 
+
+
 function drawUFOs(c) {
   for(var ufo in ufos) {
     var ufo = ufos[ufo];
@@ -739,30 +703,7 @@ function findNearestBase(x) {
   }
 }
 
-// Thanks to http://joshondesign.com/p/books/canvasdeepdive
-function collided(a, b) {
-    //check for horz collision
-    if(b.x + b.width >= a.x && b.x < a.x + a.width) {
-        //check for vert collision
-        if(b.y + b.height >= a.y && b.y < a.y + a.height) {
-            return true;
-        }
-    }
-    //check a inside b
-    if(b.x <= a.x && b.x + b.width >= a.x+a.width) {
-        if(b.y <= a.y && b.y + b.height >= a.y + a.height) {
-            return true;
-        }
-    }
-    //check b inside a
-    if(a.x <= b.x && a.x + a.width >= b.x+b.width) {
-        if(a.y <= b.y && a.y + a.height >= b.y+b.height) {
-            return true;
-        }
-    }
-    return false;
-}
-
+// MDN
 function explosionCollided(explosion, object) {
   object.radius = object.width / 2 || 1;
   explosion.radius = explosion.width / 2;
@@ -807,8 +748,8 @@ function restartGame(cleanupOnly) {
   firedMissiles = [];
   explosions = [];
   game.counter = 0;
-  game.level = 1;    
   if(!cleanupOnly) {
+    game.level = 1;    
     game.levelScore = 0;
     game.totalScore = 0;
     setup();
