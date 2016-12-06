@@ -3,7 +3,7 @@ var CANVAS_WIDTH = 500;
 var CANVAS_HEIGHT = 500;
 var FPS = 30;
 var MISSILE_SPEED = 10;
-var EXPLOSION_SIZE = 30;
+var EXPLOSION_SIZE = 81;
 var LAUNCH_RATE = 50;
 var UFO_SPEED = 3;
 var PLANE_SPEED = 2;
@@ -17,6 +17,7 @@ var REMAINING_BASE_SCORE = 2;
 var REMAINING_CITY_SCORE = 5;
 
 // Assets
+var explosion_image = 'images/explosion.png';
 var missile_image = 'images/missile_sprite.png';
 var city_image = 'images/city.png';
 var base_image = 'images/base.png';
@@ -671,11 +672,18 @@ function drawExplosions(c) {
     if(explosion.counter >= EXPLOSION_SIZE) {
       continue;
     } else {
-      c.fillStyle = 'orange';    
-      c.moveTo(explosion.x, explosion.y);
-      c.beginPath();
-      c.arc(explosion.x, explosion.y, explosion.counter, 0, Math.PI*2);
-      c.fill();
+      var i = explosion.counter;
+      var explosionImage = new Image();
+      explosionImage.src = explosion_image;
+      c.drawImage(
+      explosionImage, 
+      (i%9)*25,Math.floor(i/9)*25,25,25,
+      explosion.x, explosion.y, 25, 25);
+      // c.fillStyle = 'orange';    
+      // c.moveTo(explosion.x, explosion.y);
+      // c.beginPath();
+      // c.arc(explosion.x, explosion.y, explosion.counter, 0, Math.PI*2);
+      // c.fill();
     }
   }
 }
