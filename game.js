@@ -263,7 +263,7 @@ function updateGame() {
 
       // Update overlay and clear everything out
       overlay.title = 'You beat level ' + game.level + '!';
-      overlay.subTitle = 'Your score: ' + game.levelScore + ". (Press space to continue)";
+      overlay.subTitle = 'Press space to continue to level ' + (game.level + 1);
       restartGame(true);
 
 
@@ -541,27 +541,28 @@ function drawCrosshairs(c) {
 
 function drawOverlay(c) {
   // Draw scores
-  c.fillStyle = 'gray';
-  c.font = "1em Arial";
-  var levelScore = "Level Score: " + game.levelScore;
-  c.fillText(levelScore, 30, 25);
+  var levelScoreText = "Level Score: " + game.levelScore;
+  drawText(c, levelScoreText, "1em Arial", "gray", 25, 30);
+  var totalScoreText = "Level Score: " + game.totalScore;
+  drawText(c, totalScoreText, "1em Arial", "gray", 25, 
+    CANVAS_WIDTH - c.measureText(totalScoreText).width - 30);
 
-  var totalScore = "Total Score: " + game.totalScore;
-  c.fillText(totalScore, CANVAS_WIDTH - c.measureText(totalScore).width - 30, 25);
+  // Draw text elements
+  if(overlay.title) drawText(c, overlay.title, "3em Arial", "white", 150);
+  if(overlay.subTitle) drawText(c, overlay.subTitle, "1.5em Arial", "white", 200);
+  // drawText(c, overlay.flash[0], "1em Arial", "white", overlay.flash[2], overlay.flash[1]);
+}
 
-  if(overlay.title) {
-    c.fillStyle = 'white';
-    c.font = "3em Arial";
-    var titleHalf = c.measureText(overlay.title).width / 2;
-    c.fillText(overlay.title, (CANVAS_WIDTH / 2) - titleHalf, 150);
+function drawText(c, elementText, font, color, y, x) {
+  c.fillStyle = color;
+  c.font = font;
+  var halfSize = c.measureText(elementText).width / 2;
+  // centered by default
+  if(!x) {
+    x = CANVAS_WIDTH / 2 - halfSize;
   }
- 
-  if(overlay.subTitle) {
-    c.fillstyle = 'gray';
-    c.font = "1.5em Arial";
-    var subTitleHalf = c.measureText(overlay.subTitle).width / 2;
-    c.fillText(overlay.subTitle, (CANVAS_WIDTH / 2) - subTitleHalf, 200);
-  }
+  c.fillText(elementText, x, y);    
+  c.fillStyle = '';
 }
 
 function drawStructure(c, structureArray, asset) {
