@@ -107,8 +107,8 @@ function Explosion(object) {
   this.counter = 1;
   this.x = object.x;
   this.y = object.y;
-  this.width = 0;
-  this.height = 0;
+  this.width = EXPLOSION_SIZE;
+  this.height = EXPLOSION_SIZE;
 }
 
 var overlay = {
@@ -248,10 +248,24 @@ function updateGame() {
     } else if(!firedMissiles.length 
           && !enemyMissiles.length && !explosions.length) {
       game.state = 'next';
+
+      // Calculate score
+      var remainingCities = cities.length;
+      var remainingMissiles = 0;
+      var remainingBases = 0;
+      for(var base in bases) {
+        var base = bases[base];
+        remainingBases += 1;
+        remainingMissiles += base.missiles.length;
+      }
+      game.levelScore += remainingBases + remainingCities + remainingMissiles;
+      game.totalScore += remainingBases + remainingCities + remainingMissiles;
+
+      // Update overlay and clear everything out
       overlay.title = 'You beat level ' + game.level + '!';
-      overlay.subTitle = 'Your score: ' + game.levelScore;
-      planes = [];
-      ufos = [];
+      overlay.subTitle = 'Your score: ' + game.levelScore + ". (Press space to continue)";
+      restartGame(true);
+
 
     // Pause game
     } else if(keyboard.space) {
@@ -404,6 +418,7 @@ function updateExplosions() {
     for(var city in cities) {
       var city = cities[city];
       if(explosionCollided(explosion, city)) {
+        explosions.push(new Explosion(city));
         city.destroyed = true;
       }
     }
@@ -411,6 +426,7 @@ function updateExplosions() {
     for(var base in bases) {
       var base = bases[base];
       if(explosionCollided(explosion, base)) {
+        explosions.push(new Explosion(base));
         base.destroyed = true;
         base.missiles = [];
       }
@@ -420,6 +436,7 @@ function updateExplosions() {
     for(var ufo in ufos) {
       var ufo = ufos[ufo];
       if(explosionCollided(explosion, ufo)) {
+        explosions.push(new Explosion(ufo));
         ufo.destroyed = true;
         ufo.flying = false;
         addScore(UFO_SCORE);
@@ -430,6 +447,7 @@ function updateExplosions() {
     for(var plane in planes) {
       var plane = planes[plane];
       if(explosionCollided(explosion, plane)) {
+        explosions.push(new Explosion(plane));
         plane.destroyed = true;
         plane.flying = false;
         addScore(PLANE_SCORE);
@@ -445,7 +463,6 @@ function updateExplosions() {
         explosion.counter = 0;
       }
     } 
-    explosion.height = explosion.width = explosion.counter * 2;
   }
 }
 
