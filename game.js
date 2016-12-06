@@ -3,7 +3,7 @@ var CANVAS_WIDTH = 500;
 var CANVAS_HEIGHT = 500;
 var FPS = 30;
 var MISSILE_SPEED = 10;
-var EXPLOSION_SIZE = 81;
+var EXPLOSION_SIZE = 24;
 var LAUNCH_RATE = 50;
 var UFO_SPEED = 3;
 var PLANE_SPEED = 2;
@@ -439,17 +439,12 @@ function updateExplosions() {
     if(explosion.counter === 0) {
       index = explosions.indexOf(explosion);  
       explosions.splice(index, 1);
-    } else if(!explosion.shrinking) {
-      explosion.counter += 2;
-      if(explosion.counter >= EXPLOSION_SIZE) {
-        explosion.shrinking = true;
-      }
-    } else if(explosion.shrinking) {
-      explosion.counter -= 4;
-      if(explosion.counter <= 0) {
+    } else {
+      explosion.counter += 1;
+      if(explosion.counter >= 60) {
         explosion.counter = 0;
       }
-    }
+    } 
     explosion.height = explosion.width = explosion.counter * 2;
   }
 }
@@ -669,22 +664,13 @@ function drawFiredMissiles(c) {
 function drawExplosions(c) {
   for(var explosion in explosions) {
     var explosion = explosions[explosion];
-    if(explosion.counter >= EXPLOSION_SIZE) {
-      continue;
-    } else {
-      var i = explosion.counter;
-      var explosionImage = new Image();
-      explosionImage.src = explosion_image;
-      c.drawImage(
-      explosionImage, 
-      (i%9)*25,Math.floor(i/9)*25,25,25,
-      explosion.x, explosion.y, 25, 25);
-      // c.fillStyle = 'orange';    
-      // c.moveTo(explosion.x, explosion.y);
-      // c.beginPath();
-      // c.arc(explosion.x, explosion.y, explosion.counter, 0, Math.PI*2);
-      // c.fill();
-    }
+    var i = explosion.counter;
+    var explosionImage = new Image();
+    explosionImage.src = explosion_image;
+    c.drawImage(
+    explosionImage, 
+    (i%9)*25,Math.floor(i/9)*25,25,24,
+    explosion.x, explosion.y, 25, 24);
   }
 }
 
