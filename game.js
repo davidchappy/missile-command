@@ -410,11 +410,14 @@ function updateFiredMissiles() {
   }
 }
 
-function checkForExplosions(elementArray, explosion, score, flyer) {
+function checkForExplosions(elementArray, explosion, score, flyer, sound) {
   for(var element in elementArray) {
     var element = elementArray[element];
     
     if(explosionCollided(explosion, element)) {
+      if(sound) {
+        if(game.sound) playSound(sound);
+      };
       element.destroyed = true;
       if(flyer) element.flying = false;
       if(score) addScore(score);
@@ -426,10 +429,10 @@ function updateExplosions() {
   for(var explosion in explosions) {
     var explosion = explosions[explosion];
     checkForExplosions(firedMissiles, explosion, MISSILE_SCORE);
-    checkForExplosions(cities, explosion);
-    checkForExplosions(bases, explosion);
-    checkForExplosions(ufos, explosion, UFO_SCORE, true);
-    checkForExplosions(planes, explosion, PLANE_SCORE, true);
+    checkForExplosions(cities, explosion, false, false, bombExplodeSound);
+    checkForExplosions(bases, explosion, false, false, bombExplodeSound);
+    checkForExplosions(ufos, explosion, UFO_SCORE, true, bombExplodeSound);
+    checkForExplosions(planes, explosion, PLANE_SCORE, true, bombExplodeSound);
 
     // remove explosion if counter is at 0
     if(explosion.counter === 0) {
@@ -467,6 +470,7 @@ function firePlayerMissile(x,y) {
 
 function fireEnemyMissile(x,y) {
   // get last enemyMissile and launch it
+  if(game.sound) playSound(bombDropSound);
   var missile = enemyMissiles.splice(enemyMissiles.length - 1)[0];
   missile.owner = 'enemy';
   fireMissile(missile,x,y);
