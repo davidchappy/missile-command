@@ -22,10 +22,14 @@ var explosion_image = 'images/explosion.png';
 var missile_image = 'images/missile_sprite.png';
 var city_image = 'images/city.png';
 var base_image = 'images/base.png';
-var plane_image_east = 'images/planeeast.png';
-var plane_image_west = 'images/planewest.png';
-var ufo_image = 'images/ufo.png';
-var ufo_image_inverse = 'images/ufo2.png';
+// var plane_image_east = 'images/planeeast.png';
+var plane_image_east = 'images/austin.png';
+// var plane_image_west = 'images/planewest.png';
+var plane_image_west = 'images/austin.png';
+// var ufo_image = 'images/ufo.png';
+var ufo_image = 'images/cody.png';
+// var ufo_image_inverse = 'images/ufo2.png';
+var ufo_image_inverse = 'images/cody.png';
 
 // Canvas
 var $canvasElement = $("#canvas");
@@ -416,7 +420,7 @@ function checkForExplosions(elementArray, explosion, score, flyer, sound) {
     
     if(explosionCollided(explosion, element)) {
       if(sound) {
-        if(game.sound) playSound(sound);
+        playSound(sound);
       };
       element.destroyed = true;
       if(flyer) element.flying = false;
@@ -452,7 +456,7 @@ function updateExplosions() {
 // Acting
 function firePlayerMissile(x,y) {
   // get missile from base and launch it
-  if(game.sound) playSound(shootSound);
+  playSound(shootSound);
   var base = findNearestBase(x);
   if(base) {
     var missile = base.missiles.splice([base.missiles.length-1], 1)[0];
@@ -470,7 +474,7 @@ function firePlayerMissile(x,y) {
 
 function fireEnemyMissile(x,y) {
   // get last enemyMissile and launch it
-  if(game.sound) playSound(bombDropSound);
+  playSound(bombDropSound);
   var missile = enemyMissiles.splice(enemyMissiles.length - 1)[0];
   missile.owner = 'enemy';
   fireMissile(missile,x,y);
@@ -716,7 +720,9 @@ function drawPlanes(c) {
 
 // Helpers
 function playSound(soundFile) {
-  soundFile.play();
+  if(game.sound) {
+    soundFile.play();
+  }
 }
 
 function findNearestBase(x) {
